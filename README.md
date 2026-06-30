@@ -2,224 +2,143 @@
 
 ## Overview
 
-This project implements an end-to-end ETL pipeline using **Azure Data Factory (ADF)** and **Mapping Data Flows** to process CSV files stored in Azure Storage.
+This project demonstrates an end-to-end ETL pipeline built using **Azure Data Factory (ADF)**. It automates the ingestion, validation, transformation, and loading of CSV files stored in Azure Data Lake using parameterized pipelines and Mapping Data Flows.
 
-The pipeline automatically detects source files, processes only the required files, applies transformations through an ADF Mapping Data Flow, and writes the transformed data into a destination sink.
-
----
-
-## Architecture
-
-```text
-Azure Storage (CSV Files)
-          │
-          ▼
-   Get Metadata
-          │
-          ▼
-      ForEach Loop
-          │
-          ▼
-     If Condition
-          │
-          ▼
-     Copy Activity
-          │
-          ▼
-   Mapping Data Flow
-          │
-          ▼
-      Destination Sink
-```
+The implementation follows a production-style workflow that dynamically discovers source files, processes only the required files, performs data transformations, and loads the processed data into a reporting dataset.
 
 ---
 
-# Pipeline Workflow
+## Project Workflow
 
-The pipeline performs the following operations:
+The pipeline consists of the following stages:
 
-1. Reads the source folder using **Get Metadata**.
-2. Retrieves the list of available CSV files.
-3. Iterates through each file using a **ForEach** activity.
-4. Uses an **If Condition** to determine whether the current file should be processed.
-5. Copies the selected CSV file into the processing location.
-6. Executes a Mapping Data Flow to transform the data.
-7. Writes the transformed data into the configured sink dataset.
+1. **Get Metadata**
+   - Retrieves the list of files from the source folder.
+   - Enables dynamic processing without hardcoding filenames.
 
----
+2. **ForEach Activity**
+   - Iterates through every discovered file.
+   - Passes the current filename to downstream activities.
 
-## Pipeline Design
+3. **If Condition**
+   - Validates whether the filename matches the required pattern (for example, files beginning with `fact`).
+   - Prevents unnecessary processing of unrelated files.
 
-<img width="1916" height="909" alt="image" src="https://github.com/user-attachments/assets/c8f7cb42-9258-46e6-baee-78051169c868" />
+4. **Copy Activity**
+   - Copies the selected CSV file using a parameterized dataset.
+   - Demonstrates reusable pipeline design.
 
----
-
-## Individual Copy Pipeline
-
-The Copy Data activity is responsible for moving the selected CSV file before transformation.
-
-**Features**
-
-- Reads CSV source
-- Parameterized dataset
-- Reusable Copy Activity
-- Used by the main orchestration pipeline
-
-![Copy Pipeline](images/copy_pipeline.png)
+5. **Mapping Data Flow**
+   - Applies graphical Spark-based transformations, including:
+     - Selecting required columns
+     - Filtering records
+     - Conditional Split based on payment type
+     - Aggregate transformation
+     - Derived Columns
+     - Alter Row transformation
+     - Writing the transformed data to the sink
 
 ---
 
-# Mapping Data Flow
+## Features
 
-The Mapping Data Flow performs multiple transformations on the copied CSV file.
-
-The transformations include:
-
-- Selecting required columns
-- Filtering records
-- Conditional branching based on payment type
-- Aggregating customer-level information
-- Creating derived columns
-- Altering output columns
-- Writing transformed data to the sink
+- Dynamic file discovery using **Get Metadata**
+- Automated file iteration using **ForEach**
+- Conditional file validation using **If Condition**
+- Parameterized source datasets
+- Dynamic filename handling
+- Copy Activity for reusable ingestion
+- Mapping Data Flow transformations
+- End-to-end orchestration within Azure Data Factory
+- Debugging and monitoring through ADF
 
 ---
 
-## Data Flow Design
-
-<img width="1920" height="633" alt="image" src="https://github.com/user-attachments/assets/5d34e636-1d56-4e93-a078-95dcab421264" />
-
----
-
-# Data Flow Steps
-
-### 1. Source
-
-Reads the input CSV dataset.
-
----
-
-### 2. Select
-
-Keeps only the required columns and renames columns where necessary.
-
----
-
-### 3. Filter
-
-Filters rows using conditions on the dataset.
-
----
-
-### 4. Conditional Split
-
-Splits incoming records into multiple streams based on payment type.
-
-Visible branches include:
-
-- Visa
-- MasterCard
-- AmEx
-
----
-
-### 5. Aggregate
-
-Groups customer records and produces aggregated values.
-
----
-
-### 6. Derived Column
-
-Creates or updates output columns.
-
----
-
-### 7. Alter Row
-
-Applies row-level actions before writing to the destination.
-
----
-
-### 8. Sink
-
-Exports the transformed dataset into the configured sink.
-
----
-
-# Technologies Used
+## Azure Services Used
 
 - Azure Data Factory
+- Azure Data Lake Storage Gen2
 - Azure Mapping Data Flow
-- Azure Blob Storage / ADLS (CSV datasets)
-- Copy Activity
-- Get Metadata Activity
-- ForEach Activity
-- If Condition Activity
-- Parameterized Datasets
+- Azure Integration Runtime
 
 ---
 
-# Pipeline Features
+## Data Flow
 
-- Dynamic file discovery
-- Parameterized datasets
-- Automated iteration using ForEach
-- Conditional file processing
-- Reusable Copy Activity
-- Mapping Data Flow transformations
-- End-to-end ETL workflow
-
----
-
-# Repository Structure
-
-```
-.
-├── pipeline/
-│   ├── OnlySelectedFiles
-│   ├── pipelinemanager
-│
-├── dataflow/
-│   └── transform_csv
-│
-├── dataset/
-│   ├── param_source_csv
-│   ├── reporting_sink
-│
-└── README.md
-```
-
----
-
-# Sample Execution
-
-The execution flow:
-
-```
+```text
+Azure Data Lake
+       │
+       ▼
 Get Metadata
-      │
-      ▼
+       │
+       ▼
 ForEach
-      │
-      ▼
-If File Matches
-      │
-      ▼
-Copy CSV
-      │
-      ▼
-Transform Data
-      │
-      ▼
-Sink
+       │
+       ▼
+If Condition
+       │
+       ▼
+Copy Activity
+       │
+       ▼
+Mapping Data Flow
+       │
+       ├── Select
+       ├── Filter
+       ├── Conditional Split
+       ├── Aggregate
+       ├── Derived Column
+       ├── Alter Row
+       ▼
+Destination Sink
 ```
 
 ---
 
-# Result
+## Pipeline Screenshots
 
-The pipeline successfully:
+### Main Pipeline
+
+<img width="1873" height="876" alt="image" src="https://github.com/user-attachments/assets/38d4cde0-c295-49f1-bae9-f653cfa10ace" />
+
+---
+
+### Copy Activity Pipeline
+
+<img width="1920" height="718" alt="image" src="https://github.com/user-attachments/assets/cf610325-6994-42e1-af0c-db014bff21f4" />
+
+---
+
+### Mapping Data Flow
+
+<img width="1918" height="617" alt="image" src="https://github.com/user-attachments/assets/ba7bf1ba-aa10-45aa-a260-d486bc76043a" />
+
+
+---
+
+## Skills Demonstrated
+
+- Azure Data Factory Pipeline Development
+- ETL Pipeline Design
+- Dynamic Pipeline Parameterization
+- Mapping Data Flows
+- Azure Data Lake Integration
+- Conditional Workflow Automation
+- File Metadata Processing
+- Pipeline Debugging and Monitoring
+
+---
+
+## Learning Outcomes
+
+Through this project, I gained practical experience with:
+
+- Building reusable ADF pipelines
+- Processing files dynamically using metadata
+- Implementing conditional execution and looping
+- Designing graphical data transformation pipelines
+- Parameterizing datasets and activities
+- Executing and monitoring production-style ETL workflows
 
 - Discovers CSV files
 - Processes only matching files
